@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Holy Beauty Team Task</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg:      #06111a;
+  --surface: #0c1d2b;
+  --card:    #112233;
+  --card2:   #162a3e;
+  --border:  #1e3a52;
+  --border2: #2a5070;
+  --text:    #e0f0ff;
+  --muted:   #6a90b0;
+  --accent:  #38bdf8;
+  --acc2:    #7dd3fc;
+  --p1: #f43f5e; --p1bg: rgba(244,63,94,.13);
+  --p2: #fb923c; --p2bg: rgba(251,146,60,.13);
+  --p3: #facc15; --p3bg: rgba(250,204,21,.13);
+  --p4: #38bdf8; --p4bg: rgba(56,189,248,.13);
+  --p5: #64748b; --p5bg: rgba(100,116,139,.13);
+  --done: #22c55e; --donebg: rgba(34,197,94,.1);
+  --r: 14px; --rs: 9px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── Setup screen ── */
+#setup-screen{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;z-index:2000;
+}
+.setup-box{
+  background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  padding:36px 40px;width:100%;max-width:440px;
+  box-shadow:0 32px 80px rgba(0,0,0,.7);animation:fadeUp .3s ease;
+}
+.setup-logo{font-size:22px;font-weight:900;letter-spacing:-1px;margin-bottom:4px}
+.setup-logo em{color:var(--accent);font-style:normal}
+.setup-sub{font-size:13px;color:var(--muted);margin-bottom:24px}
+.setup-step{
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:14px;margin-bottom:10px;
+}
+.setup-step-num{font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.setup-step p{font-size:12px;color:var(--muted);line-height:1.6}
+.setup-step a{color:var(--accent);text-decoration:none}
+.setup-step code{background:var(--card2);padding:1px 5px;border-radius:4px;font-family:monospace;font-size:11px;color:var(--acc2)}
+
+/* ── Login screen ── */
+#login-screen{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;z-index:1000;
+  flex-direction:column;
+}
+.login-box{
+  background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  padding:40px 44px;width:100%;max-width:400px;
+  box-shadow:0 32px 80px rgba(0,0,0,.6);animation:fadeUp .3s ease;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.login-logo{font-size:26px;font-weight:900;letter-spacing:-1.2px;margin-bottom:4px}
+.login-logo em{color:var(--accent);font-style:normal}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:28px}
+.login-section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.user-chip{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:8px 14px;border-radius:30px;border:1px solid var(--border);
+  background:var(--card);cursor:pointer;font-size:13px;
+  transition:all .15s;margin:3px;font-family:inherit;color:var(--text);
+}
+.user-chip:hover{border-color:var(--accent);background:var(--card2);transform:translateY(-1px)}
+.login-divider{text-align:center;color:var(--muted);font-size:12px;margin:18px 0;position:relative}
+.login-divider::before,.login-divider::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:var(--border)}
+.login-divider::before{left:0}.login-divider::after{right:0}
+.login-new{display:flex;gap:8px;margin-top:8px}
+.login-new input{
+  flex:1;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--rs);color:var(--text);padding:10px 14px;
+  font-size:13px;font-family:inherit;outline:none;transition:border-color .15s;
+}
+.login-new input:focus{border-color:var(--accent)}
+.role-row{display:flex;gap:6px;margin-bottom:8px}
+.role-btn{
+  flex:1;padding:7px;border-radius:8px;border:1px solid var(--border);
+  background:var(--card);cursor:pointer;font-size:12px;font-weight:600;
+  color:var(--muted);transition:all .15s;font-family:inherit;
+}
+.role-btn.on{border-color:var(--accent);color:var(--accent);background:rgba(56,189,248,.1)}
+
+/* ── App ── */
+#app{display:none}
+
+/* ── Header ── */
+header{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 24px;display:flex;align-items:center;height:56px;
+  position:sticky;top:0;z-index:100;gap:12px;
+}
+.logo{font-size:15px;font-weight:900;letter-spacing:-.8px;flex-shrink:0;white-space:nowrap}
+.logo em{color:var(--accent);font-style:normal}
+.header-tabs{display:flex;gap:2px;flex:1;justify-content:center}
+.tab{
+  padding:6px 14px;border-radius:8px;border:none;background:transparent;
+  color:var(--muted);cursor:pointer;font-size:13px;font-weight:600;
+  transition:all .15s;font-family:inherit;display:flex;align-items:center;gap:5px;
+}
+.tab:hover{color:var(--text);background:var(--card)}
+.tab.on{color:var(--text);background:var(--card2)}
+.header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.me-badge{
+  display:flex;align-items:center;gap:7px;
+  padding:5px 11px;border-radius:20px;border:1px solid var(--border);
+  background:var(--card);font-size:12px;cursor:pointer;transition:all .15s;
+}
+.me-badge:hover{border-color:var(--border2)}
+.notif-btn{
+  width:34px;height:34px;border-radius:8px;border:1px solid var(--border);
+  background:var(--card);cursor:pointer;display:flex;align-items:center;
+  justify-content:center;font-size:16px;position:relative;transition:all .15s;
+}
+.notif-btn:hover{border-color:var(--accent)}
+.notif-count{
+  position:absolute;top:-4px;right:-4px;background:var(--p1);
+  color:#fff;font-size:10px;font-weight:800;border-radius:10px;
+  min-width:17px;height:17px;display:none;align-items:center;justify-content:center;
+  padding:0 3px;border:2px solid var(--bg);
+}
+.notif-count.on{display:flex}
+.live-dot{
+  width:7px;height:7px;background:var(--done);border-radius:50%;
+  animation:pulse 2s infinite;flex-shrink:0;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+
+/* ── Stats ── */
+.stats-bar{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:12px 24px;display:flex;gap:10px;
+}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:10px 16px;flex:1;text-align:center}
+.stat-val{font-size:22px;font-weight:800;line-height:1}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.4px}
+
+/* ── Main ── */
+main{max-width:900px;margin:0 auto;padding:22px}
+
+/* ── Toolbar ── */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.btn{
+  padding:8px 16px;border-radius:var(--rs);border:none;cursor:pointer;
+  font-size:13px;font-weight:600;transition:all .15s;display:inline-flex;
+  align-items:center;gap:6px;font-family:inherit;
+}
+.btn-primary{background:var(--accent);color:#06111a}
+.btn-primary:hover{background:var(--acc2);transform:translateY(-1px)}
+.btn-ghost{background:var(--card);color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--text);border-color:var(--accent)}
+.filters{display:flex;gap:5px;margin-left:auto;flex-wrap:wrap}
+.f-btn{
+  padding:5px 12px;border-radius:20px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);cursor:pointer;font-size:12px;
+  font-weight:600;transition:all .15s;font-family:inherit;
+}
+.f-btn:hover,.f-btn.on{background:var(--card2);color:var(--text);border-color:var(--accent)}
+
+/* ── Task cards ── */
+.task-list{display:flex;flex-direction:column;gap:8px}
+.task-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  border-left:3px solid transparent;animation:fadeIn .2s ease;transition:border-color .15s,box-shadow .15s;
+}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.task-card:hover{border-color:var(--border2);box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.task-card.p1{border-left-color:var(--p1)}.task-card.p2{border-left-color:var(--p2)}
+.task-card.p3{border-left-color:var(--p3)}.task-card.p4{border-left-color:var(--p4)}
+.task-card.p5{border-left-color:var(--p5)}.task-card.done{opacity:.4}
+.task-main{padding:14px 16px;display:flex;align-items:flex-start;gap:12px;cursor:pointer}
+.chk{
+  width:22px;height:22px;border-radius:50%;border:2px solid var(--border2);
+  cursor:pointer;flex-shrink:0;margin-top:1px;transition:all .15s;
+  background:transparent;display:flex;align-items:center;justify-content:center;
+}
+.chk:hover{border-color:var(--done)}
+.chk.on{background:var(--done);border-color:var(--done)}
+.chk.on::after{content:"✓";color:#fff;font-size:11px;font-weight:800}
+.task-body{flex:1;min-width:0}
+.task-title-row{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.task-card.done .task-title-row{text-decoration:line-through;color:var(--muted)}
+.pbadge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;flex-shrink:0}
+.p1 .pbadge{background:var(--p1bg);color:var(--p1)}.p2 .pbadge{background:var(--p2bg);color:var(--p2)}
+.p3 .pbadge{background:var(--p3bg);color:var(--p3)}.p4 .pbadge{background:var(--p4bg);color:var(--p4)}
+.p5 .pbadge{background:var(--p5bg);color:var(--p5)}
+.task-desc{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5}
+.task-meta{font-size:11px;color:var(--muted);margin-top:7px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.due-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:var(--donebg);color:var(--done)}
+.due-badge.overdue{background:var(--p1bg);color:var(--p1)}.due-badge.today{background:var(--p2bg);color:var(--p2)}
+.vis-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600}
+.vis-badge.universal{background:rgba(56,189,248,.12);color:var(--accent)}
+.vis-badge.private{background:rgba(251,146,60,.12);color:var(--p2)}
+.task-actions{display:flex;gap:4px;flex-shrink:0}
+.ibt{
+  width:30px;height:30px;border-radius:7px;border:1px solid transparent;
+  background:transparent;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;font-size:13px;color:var(--muted);transition:all .15s;
+}
+.ibt:hover{background:var(--card2);border-color:var(--border);color:var(--text)}
+.ibt.del:hover{background:rgba(244,63,94,.12);border-color:var(--p1);color:var(--p1)}
+.comment-count{
+  font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px;
+  cursor:pointer;padding:2px 7px;border-radius:20px;border:1px solid transparent;transition:all .15s;
+}
+.comment-count:hover{border-color:var(--border);background:var(--card2)}
+
+/* ── Comments ── */
+.task-comments{border-top:1px solid var(--border);padding:12px 16px;display:none}
+.task-card.expanded .task-comments{display:block}
+.comment{display:flex;gap:10px;margin-bottom:10px}
+.comment:last-child{margin-bottom:0}
+.comment-body{flex:1}
+.comment-author{font-size:12px;font-weight:700;color:var(--text)}
+.comment-author span{font-weight:400;color:var(--muted);font-size:11px;margin-left:6px}
+.comment-text{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5}
+.comment-input-row{display:flex;gap:8px;margin-top:12px}
+.comment-input{
+  flex:1;background:var(--card2);border:1px solid var(--border);
+  border-radius:var(--rs);color:var(--text);padding:8px 12px;
+  font-size:12px;font-family:inherit;outline:none;transition:border-color .15s;
+}
+.comment-input:focus{border-color:var(--accent)}
+.comment-send{
+  padding:8px 14px;border-radius:var(--rs);border:none;background:var(--accent);
+  color:#06111a;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;
+  transition:background .15s;flex-shrink:0;
+}
+.comment-send:hover{background:var(--acc2)}
+
+/* ── Calendar ── */
+#view-calendar{display:none}
+.cal-header{margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.cal-title{font-size:17px;font-weight:700}
+.cal-nav{padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;font-family:inherit;font-size:13px;transition:all .15s}
+.cal-nav:hover{border-color:var(--accent)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day-name{text-align:center;font-size:10px;font-weight:700;color:var(--muted);padding:8px 0;text-transform:uppercase;letter-spacing:.4px}
+.cal-day{min-height:85px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:7px;position:relative}
+.cal-day.other-month{opacity:.25}.cal-day.today-day{border-color:var(--accent)}
+.cal-day-num{font-size:12px;font-weight:700;margin-bottom:4px}
+.cal-day.today-day .cal-day-num{color:var(--accent)}
+.cal-task-dot{font-size:9px;padding:2px 5px;border-radius:4px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;font-weight:600}
+.cal-task-dot.p1{background:var(--p1bg);color:var(--p1)}.cal-task-dot.p2{background:var(--p2bg);color:var(--p2)}
+.cal-task-dot.p3{background:var(--p3bg);color:var(--p3)}.cal-task-dot.p4{background:var(--p4bg);color:var(--p4)}
+.cal-task-dot.p5{background:var(--p5bg);color:var(--p5)}
+
+/* ── Team ── */
+#view-team{display:none}
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:24px}
+.team-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;text-align:center;position:relative}
+.team-name{font-size:14px;font-weight:700;margin-top:8px}
+.team-role{font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+.team-tasks{font-size:12px;color:var(--muted);margin-top:8px}
+.team-tasks strong{color:var(--text)}
+.team-del{position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:6px;border:none;background:transparent;cursor:pointer;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:all .15s}
+.team-del:hover{background:rgba(244,63,94,.12);color:var(--p1)}
+.add-member-box{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;max-width:340px}
+.add-member-title{font-size:14px;font-weight:700;margin-bottom:14px}
+
+/* ── Empty ── */
+.empty{text-align:center;padding:64px 20px;color:var(--muted)}
+.empty-ico{font-size:44px;margin-bottom:14px}
+.empty h3{font-size:16px;color:var(--text);margin-bottom:6px}
+.empty p{font-size:13px}
+
+/* ── Modal ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;z-index:500;backdrop-filter:blur(6px)}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:28px;width:100%;max-width:480px;box-shadow:0 24px 64px rgba(0,0,0,.6);animation:modalIn .2s ease;max-height:90vh;overflow-y:auto}
+@keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:20px}
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.fg input,.fg textarea,.fg select{width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:10px 12px;font-size:13px;font-family:inherit;outline:none;transition:border-color .15s;appearance:none}
+.fg select option{background:var(--card);color:var(--text)}
+.fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--accent)}
+.fg textarea{resize:vertical;min-height:70px}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pri-grid{display:flex;gap:6px}
+.po{flex:1;padding:8px 4px;border-radius:8px;border:2px solid var(--border);background:var(--card);cursor:pointer;text-align:center;font-size:11px;font-weight:700;color:var(--muted);transition:all .15s;line-height:1.5;font-family:inherit}
+.po:hover{border-color:var(--muted);color:var(--text)}
+.po.s1{border-color:var(--p1);color:var(--p1);background:var(--p1bg)}.po.s2{border-color:var(--p2);color:var(--p2);background:var(--p2bg)}
+.po.s3{border-color:var(--p3);color:var(--p3);background:var(--p3bg)}.po.s4{border-color:var(--p4);color:var(--p4);background:var(--p4bg)}
+.po.s5{border-color:var(--p5);color:var(--p5);background:var(--p5bg)}
+.vis-toggle{display:flex;gap:8px}
+.vis-btn{flex:1;padding:10px 8px;border-radius:10px;border:2px solid var(--border);background:var(--card);cursor:pointer;text-align:center;font-size:12px;font-weight:700;color:var(--muted);transition:all .15s;line-height:1.5;font-family:inherit}
+.vis-btn span{font-weight:400;font-size:10px;display:block}
+.vis-btn.on-all{border-color:var(--accent);color:var(--accent);background:rgba(56,189,248,.1)}
+.vis-btn.on-priv{border-color:var(--p2);color:var(--p2);background:rgba(251,146,60,.1)}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+
+/* ── Notif panel ── */
+.notif-panel{position:fixed;top:60px;right:12px;width:320px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 16px 48px rgba(0,0,0,.6);z-index:400;display:none;animation:fadeUp .2s ease;overflow:hidden}
+.notif-panel.on{display:block}
+.notif-panel-head{padding:12px 14px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.notif-clear{font-size:11px;color:var(--muted);cursor:pointer;font-weight:600}
+.notif-clear:hover{color:var(--text)}
+.notif-list{max-height:340px;overflow-y:auto}
+.notif-item{padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.notif-item:last-child{border-bottom:none}
+.notif-item:hover{background:var(--card)}
+.notif-item-title{font-size:12px;font-weight:600;margin-bottom:3px}
+.notif-item-sub{font-size:11px;color:var(--muted)}
+.notif-empty{padding:24px;text-align:center;color:var(--muted);font-size:13px}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--card2);border:1px solid var(--border2);border-radius:8px;padding:9px 20px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.5);transition:transform .25s;z-index:900;white-space:nowrap;max-width:90vw;text-align:center}
+.toast.on{transform:translateX(-50%) translateY(0)}
+
+/* ── Avatars ── */
+.av0{background:rgba(56,189,248,.2);color:#38bdf8}.av1{background:rgba(244,63,94,.2);color:#f87171}
+.av2{background:rgba(34,197,94,.2);color:#4ade80}.av3{background:rgba(251,146,60,.2);color:#fb923c}
+.av4{background:rgba(250,204,21,.2);color:#facc15}.av5{background:rgba(168,85,247,.2);color:#c084fc}
+.av6{background:rgba(236,72,153,.2);color:#f472b6}.av7{background:rgba(34,211,238,.2);color:#22d3ee}
+
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- ══ CONFIG (remplir après setup Supabase) ══════════════ -->
+<script>
+// ⚠️ REMPLACE CES 2 VALEURS PAR TES INFOS SUPABASE
+const SUPABASE_URL = 'https://ntaljcphmelcrlgejuta.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50YWxqY3BobWVsY3JsZ2VqdXRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MzMwMjcsImV4cCI6MjA5MzQwOTAyN30.xxzWrwbFokK1WWqaZT0azq2zNmArye4eI695oAJPswg';
+</script>
+
+<!-- ══ SETUP GUIDE (affiché si pas encore configuré) ═══════ -->
+<div id="setup-screen" style="display:none">
+  <div class="setup-box">
+    <div class="setup-logo">Holy Beauty <em>Team Task</em></div>
+    <div class="setup-sub">Configuration initiale — 5 minutes</div>
+    <div class="setup-step">
+      <div class="setup-step-num">Étape 1</div>
+      <p>Va sur <a href="https://supabase.com" target="_blank">supabase.com</a> → crée un compte gratuit → "New project"</p>
+    </div>
+    <div class="setup-step">
+      <div class="setup-step-num">Étape 2</div>
+      <p>Dans ton projet → <strong>SQL Editor</strong> → colle le contenu du fichier <code>schema.sql</code> et clique Run</p>
+    </div>
+    <div class="setup-step">
+      <div class="setup-step-num">Étape 3</div>
+      <p>Dans <strong>Project Settings → API</strong> → copie ton <code>Project URL</code> et ta <code>anon key</code></p>
+    </div>
+    <div class="setup-step">
+      <div class="setup-step-num">Étape 4</div>
+      <p>Ouvre <code>index.html</code> et remplace <code>COLLE_TON_URL_ICI</code> et <code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50YWxqY3BobWVsY3JsZ2VqdXRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MzMwMjcsImV4cCI6MjA5MzQwOTAyN30.xxzWrwbFokK1WWqaZT0azq2zNmArye4eI695oAJPswg</code> par tes valeurs</p>
+    </div>
+    <div class="setup-step">
+      <div class="setup-step-num">Étape 5 — Mise en ligne</div>
+      <p>Va sur <a href="https://vercel.com" target="_blank">vercel.com</a> → "Add New Project" → glisse ton fichier <code>index.html</code> → Deploy. Tu as une URL publique permanente !</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LOGIN ══════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Holy Beauty <em>Team Task</em></div>
+    <div class="login-sub">Qui es-tu ?</div>
+    <div class="login-section-title">L'équipe</div>
+    <div id="user-chips" style="margin-bottom:8px"></div>
+    <div class="login-divider">ou rejoindre</div>
+    <div class="role-row">
+      <button class="role-btn on" id="rb-member" onclick="setRole('member')">👤 Équipier</button>
+      <button class="role-btn" id="rb-admin" onclick="setRole('admin')">👑 Patron</button>
+    </div>
+    <div class="login-new">
+      <input id="new-name" placeholder="Ton prénom…" maxlength="20" onkeydown="if(event.key==='Enter')joinNew()">
+      <button class="btn btn-primary" onclick="joinNew()">Rejoindre</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ════════════════════════════════════════════════ -->
+<div id="app">
+<header>
+  <div class="logo">Holy Beauty <em>Team Task</em></div>
+  <div class="header-tabs">
+    <button class="tab on" onclick="switchView('tasks',this)">📋 Tâches</button>
+    <button class="tab" onclick="switchView('calendar',this)">📅 Calendrier</button>
+    <button class="tab" onclick="switchView('team',this)">👥 Équipe</button>
+  </div>
+  <div class="header-right">
+    <div class="live-dot" title="Temps réel actif"></div>
+    <button class="notif-btn" onclick="toggleNotifPanel()" id="notif-btn">🔔<div class="notif-count" id="notif-count"></div></button>
+    <div class="me-badge" onclick="logout()" title="Changer d'utilisateur">
+      <span id="me-avatar" style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700"></span>
+      <span id="me-name">—</span>
+      <span style="color:var(--muted);font-size:10px">↩</span>
+    </div>
+  </div>
+</header>
+
+<div class="stats-bar">
+  <div class="stat"><div class="stat-val" id="s-total">0</div><div class="stat-lbl">Total</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--accent)" id="s-pending">0</div><div class="stat-lbl">En attente</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--done)" id="s-done">0</div><div class="stat-lbl">Terminées</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--p1)" id="s-crit">0</div><div class="stat-lbl">Urgentes</div></div>
+</div>
+
+<main>
+  <div id="view-tasks">
+    <div class="toolbar">
+      <button class="btn btn-primary" id="btn-new" onclick="openModal()">＋ Nouvelle tâche</button>
+      <div class="filters">
+        <button class="f-btn on" onclick="setFilter('all',this)">Toutes</button>
+        <button class="f-btn" onclick="setFilter('pending',this)">En attente</button>
+        <button class="f-btn" onclick="setFilter('done',this)">Terminées</button>
+        <button class="f-btn" onclick="setFilter('mine',this)">Les miennes</button>
+      </div>
+    </div>
+    <div class="task-list" id="list"></div>
+  </div>
+
+  <div id="view-calendar">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calPrev()">‹</button>
+      <div class="cal-title" id="cal-title"></div>
+      <button class="cal-nav" onclick="calNext()">›</button>
+      <button class="cal-nav" onclick="calToday()">Aujourd'hui</button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+
+  <div id="view-team">
+    <div class="team-grid" id="team-grid"></div>
+    <div class="add-member-box">
+      <div class="add-member-title">Ajouter un membre</div>
+      <div class="role-row" style="margin-bottom:8px">
+        <button class="role-btn on" id="trb-member" onclick="setTeamRole('member')">👤 Équipier</button>
+        <button class="role-btn" id="trb-admin" onclick="setTeamRole('admin')">👑 Patron</button>
+      </div>
+      <div class="login-new">
+        <input id="team-new-name" placeholder="Prénom…" maxlength="20" onkeydown="if(event.key==='Enter')addTeamMember()">
+        <button class="btn btn-primary" onclick="addTeamMember()">Ajouter</button>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- Notif panel -->
+<div class="notif-panel" id="notif-panel">
+  <div class="notif-panel-head">🔔 Notifications<span class="notif-clear" onclick="clearNotifs()">Effacer</span></div>
+  <div class="notif-list" id="notif-list"><div class="notif-empty">Aucune notification</div></div>
+</div>
+
+<!-- Task Modal -->
+<div class="overlay" id="modal" style="display:none" onclick="bgClose(event)">
+  <div class="modal">
+    <div class="modal-title" id="modal-ttl">Nouvelle tâche</div>
+    <div class="fg">
+      <label>Titre *</label>
+      <input id="f-title" placeholder="Ex: Faire la vaisselle avant le service…">
+    </div>
+    <div class="fg">
+      <label>Description</label>
+      <textarea id="f-desc" placeholder="Détails…"></textarea>
+    </div>
+    <div class="fg">
+      <label>Priorité</label>
+      <div class="pri-grid">
+        <button class="po" data-v="1" onclick="selP(1)">🔴<br>Urgent</button>
+        <button class="po" data-v="2" onclick="selP(2)">🟠<br>Haute</button>
+        <button class="po s3" data-v="3" onclick="selP(3)">🟡<br>Normale</button>
+        <button class="po" data-v="4" onclick="selP(4)">🔵<br>Basse</button>
+        <button class="po" data-v="5" onclick="selP(5)">⚪<br>Info</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Visibilité</label>
+      <div class="vis-toggle">
+        <button class="vis-btn on-all" id="vb-all" onclick="setVis('all')">🌍 Universel<br><span>Toute l'équipe voit</span></button>
+        <button class="vis-btn" id="vb-priv" onclick="setVis('private')">🔒 Ciblé<br><span>Une seule personne</span></button>
+      </div>
+      <select id="f-assign" style="margin-top:8px;display:none">
+        <option value="">Choisir une personne…</option>
+      </select>
+    </div>
+    <div class="fg-row">
+      <div class="fg" style="margin-bottom:0"><label>Date d'échéance</label><input type="date" id="f-due-date"></div>
+      <div class="fg" style="margin-bottom:0"><label>Heure</label><input type="time" id="f-due-time"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveTask()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Supabase init ─────────────────────────────────────────
+const { createClient } = supabase;
+let sb = null;
+
+function initSupabase() {
+  if (SUPABASE_URL === 'COLLE_TON_URL_ICI' || !SUPABASE_KEY || SUPABASE_KEY === 'COLLE_TA_CLE_ANON_ICI') {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('setup-screen').style.display = 'flex';
+    return false;
+  }
+  sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+  return true;
+}
+
+// ── State ─────────────────────────────────────────────────
+const PL = {1:'Urgent',2:'Haute',3:'Normale',4:'Basse',5:'Info'};
+const COLORS = ['av0','av1','av2','av3','av4','av5','av6','av7'];
+const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const DAYS_FR   = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+
+let tasks   = [];
+let users   = [];
+let filter  = 'all';
+let editId  = null;
+let selPrio = 3;
+let selVis  = 'all';
+let me      = null;
+let newNotifs = [];
+let teamNewRole = 'member';
+let loginRole   = 'member';
+let calDate = new Date();
+let currentView = 'tasks';
+
+// ── Avatar helpers ────────────────────────────────────────
+function avatarClass(name) {
+  let h = 0;
+  for (let c of name) h = (h * 31 + c.charCodeAt(0)) & 0xff;
+  return COLORS[h % COLORS.length];
+}
+function initials(name) { return name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase(); }
+function makeAvatar(name, size=28) {
+  const cls = avatarClass(name);
+  return `<div class="${cls}" style="width:${size}px;height:${size}px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:${Math.round(size*.38)}px;font-weight:700;flex-shrink:0">${initials(name)}</div>`;
+}
+
+// ── Login ─────────────────────────────────────────────────
+function setRole(r) {
+  loginRole = r;
+  document.getElementById('rb-member').classList.toggle('on', r==='member');
+  document.getElementById('rb-admin').classList.toggle('on', r==='admin');
+}
+function setTeamRole(r) {
+  teamNewRole = r;
+  document.getElementById('trb-member').classList.toggle('on', r==='member');
+  document.getElementById('trb-admin').classList.toggle('on', r==='admin');
+}
+
+async function loadUsersForLogin() {
+  if (!sb) return;
+  const { data } = await sb.from('users').select('*').order('created_at');
+  users = data || [];
+  renderChips();
+}
+
+function renderChips() {
+  const el = document.getElementById('user-chips');
+  if (!users.length) { el.innerHTML = '<div style="color:var(--muted);font-size:12px;margin-bottom:8px">Aucun membre pour l\'instant.</div>'; return; }
+  el.innerHTML = users.map(u => `
+    <button class="user-chip" onclick="loginAs('${u.id}')">
+      ${makeAvatar(u.name, 22)}
+      ${esc(u.name)}
+      ${u.role==='admin'?'<span style="font-size:10px;color:var(--p2)">👑</span>':''}
+    </button>
+  `).join('');
+}
+
+function loginAs(uid) {
+  const u = users.find(x => x.id === uid);
+  if (!u) return;
+  me = u;
+  localStorage.setItem('hbtt_user', JSON.stringify(me));
+  startSession();
+}
+
+async function joinNew() {
+  const name = document.getElementById('new-name').value.trim();
+  if (!name) return;
+  const { data, error } = await sb.from('users').insert({name, role: loginRole}).select().single();
+  if (error) { toast(error.code === '23505' ? 'Ce prénom existe déjà' : 'Erreur'); return; }
+  me = data;
+  localStorage.setItem('hbtt_user', JSON.stringify(me));
+  startSession();
+}
+
+function startSession() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('btn-new').style.display = me.role==='admin' ? '' : 'none';
+  const av = document.getElementById('me-avatar');
+  av.className = avatarClass(me.name);
+  av.textContent = initials(me.name);
+  document.getElementById('me-name').textContent = me.name;
+  load();
+  loadUsers();
+  subscribeRealtime();
+  setTimeout(checkDailyReminders, 2000);
+}
+
+function logout() {
+  me = null;
+  localStorage.removeItem('hbtt_user');
+  unsubscribeRealtime();
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  newNotifs = [];
+  document.getElementById('new-name').value = '';
+  loadUsersForLogin();
+}
+
+// ── Data ──────────────────────────────────────────────────
+async function load() {
+  if (!sb) return;
+  const { data } = await sb.from('tasks').select('*, comments(*)').order('created_at', {ascending: false});
+  tasks = (data || []).map(t => ({...t, comments: t.comments || []}));
+  render(); stats();
+  if (currentView === 'calendar') renderCal();
+}
+
+async function loadUsers() {
+  if (!sb) return;
+  const { data } = await sb.from('users').select('*').order('created_at');
+  users = data || [];
+  if (currentView === 'team') renderTeam();
+}
+
+// ── Real-time subscriptions ───────────────────────────────
+let realtimeChannel = null;
+
+function subscribeRealtime() {
+  if (!sb) return;
+  realtimeChannel = sb.channel('holy-beauty')
+    .on('postgres_changes', {event: '*', schema: 'public', table: 'tasks'}, payload => {
+      if (payload.eventType === 'INSERT' && payload.new.created_by !== me?.name) {
+        const t = payload.new;
+        if (canSeeTask(t)) {
+          addNotif({type:'task', task_id:t.id, task_title:t.title, author:t.created_by, priority:t.priority, at:t.created_at});
+        }
+      }
+      load();
+    })
+    .on('postgres_changes', {event: 'INSERT', schema: 'public', table: 'comments'}, payload => {
+      const c = payload.new;
+      if (c.author !== me?.name) {
+        const task = tasks.find(t => t.id === c.task_id);
+        if (task && canSeeTask(task)) {
+          addNotif({type:'comment', task_id:c.task_id, task_title:task?.title||'Tâche', author:c.author, message:c.text, priority:task?.priority||3, at:c.created_at});
+        }
+      }
+      load();
+    })
+    .on('postgres_changes', {event: '*', schema: 'public', table: 'users'}, () => loadUsers())
+    .subscribe();
+}
+
+function unsubscribeRealtime() {
+  if (realtimeChannel) { sb.removeChannel(realtimeChannel); realtimeChannel = null; }
+}
+
+function addNotif(n) {
+  newNotifs.unshift(n);
+  playNotif(n.priority);
+  updateNotifBadge();
+  renderNotifPanel();
+}
+
+// ── Sound ─────────────────────────────────────────────────
+function playNotif(priority) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (priority === 1) {
+      [0, 0.28].forEach(delay => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value = 880; o.type = 'sine';
+        g.gain.setValueAtTime(0, ctx.currentTime+delay);
+        g.gain.linearRampToValueAtTime(0.6, ctx.currentTime+delay+0.01);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+delay+0.22);
+        o.start(ctx.currentTime+delay); o.stop(ctx.currentTime+delay+0.22);
+      });
+    } else {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 520; o.type = 'sine';
+      g.gain.setValueAtTime(0, ctx.currentTime);
+      g.gain.linearRampToValueAtTime(0.22, ctx.currentTime+0.015);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.35);
+      o.start(ctx.currentTime); o.stop(ctx.currentTime+0.35);
+    }
+  } catch(e) {}
+}
+
+// ── Notif panel ───────────────────────────────────────────
+function updateNotifBadge() {
+  const el = document.getElementById('notif-count');
+  if (newNotifs.length) { el.textContent = newNotifs.length>9?'9+':newNotifs.length; el.classList.add('on'); }
+  else el.classList.remove('on');
+}
+function toggleNotifPanel() { document.getElementById('notif-panel').classList.toggle('on'); }
+function renderNotifPanel() {
+  const el = document.getElementById('notif-list');
+  if (!newNotifs.length) { el.innerHTML = '<div class="notif-empty">Aucune notification</div>'; return; }
+  el.innerHTML = newNotifs.slice(0,20).map(n => `
+    <div class="notif-item" onclick="focusTask('${n.task_id}')">
+      <div class="notif-item-title">${n.type==='comment'?'💬':'📋'} ${esc(n.task_title)}</div>
+      <div class="notif-item-sub">${n.type==='comment'?`${esc(n.author)} : "${esc((n.message||'').slice(0,55))}"`:` Nouvelle tâche de ${esc(n.author)}`}
+        <span style="margin-left:5px;color:var(--muted)">${fmt(n.at)}</span>
+      </div>
+    </div>`).join('');
+}
+function clearNotifs() { newNotifs = []; updateNotifBadge(); renderNotifPanel(); }
+function focusTask(id) {
+  switchView('tasks');
+  document.getElementById('notif-panel').classList.remove('on');
+  setTimeout(() => {
+    const card = document.querySelector(`[data-id="${id}"]`);
+    if (card) { card.scrollIntoView({behavior:'smooth',block:'center'}); card.classList.add('expanded'); }
+  }, 200);
+}
+
+// ── Stats ─────────────────────────────────────────────────
+function stats() {
+  const visible = tasks.filter(t => canSeeTask(t));
+  const p = visible.filter(t => t.status==='pending');
+  const d = visible.filter(t => t.status==='done');
+  const c = p.filter(t => t.priority===1);
+  document.getElementById('s-total').textContent   = visible.length;
+  document.getElementById('s-pending').textContent = p.length;
+  document.getElementById('s-done').textContent    = d.length;
+  document.getElementById('s-crit').textContent    = c.length;
+}
+
+// ── Privacy ───────────────────────────────────────────────
+function canSeeTask(t) {
+  if (me?.role === 'admin') return true;
+  if (!t.assigned_to || t.assigned_to === 'all') return true;
+  return t.assigned_to === me?.name;
+}
+
+// ── Due badge ─────────────────────────────────────────────
+function dueBadge(t) {
+  if (!t.due_date) return '';
+  const today = new Date().toISOString().slice(0,10);
+  const cls = t.due_date < today ? 'overdue' : t.due_date === today ? 'today' : '';
+  const label = t.due_date === today ? 'Aujourd\'hui' : t.due_date < today ? 'En retard' : fmtDate(t.due_date);
+  return `<span class="due-badge ${cls}">📅 ${label}${t.due_time ? ' à ' + t.due_time.slice(0,5) : ''}</span>`;
+}
+function fmtDate(iso) {
+  const d = new Date(iso + 'T12:00:00');
+  return d.toLocaleDateString('fr-FR', {day:'2-digit', month:'short'});
+}
+function visBadge(t) {
+  if (!t.assigned_to || t.assigned_to==='all') return `<span class="vis-badge universal">🌍 Universel</span>`;
+  return `<span class="vis-badge private">🔒 Ciblé → ${esc(t.assigned_to)}</span>`;
+}
+
+// ── Render ────────────────────────────────────────────────
+function render() {
+  const el = document.getElementById('list');
+  let shown = tasks.filter(t => {
+    if (!canSeeTask(t)) return false;
+    if (filter==='pending') return t.status==='pending';
+    if (filter==='done')    return t.status==='done';
+    if (filter==='mine')    return t.assigned_to===me?.name || t.created_by===me?.name;
+    return true;
+  });
+  shown.sort((a,b) => {
+    if (a.status==='done'&&b.status!=='done') return 1;
+    if (b.status==='done'&&a.status!=='done') return -1;
+    return a.priority - b.priority;
+  });
+  if (!shown.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-ico">${filter==='done'?'🎯':'📭'}</div><h3>${filter==='done'?'Aucune tâche terminée':'Aucune tâche'}</h3><p>${filter==='all'?'Le patron n\'a pas encore posté de tâche.':''}</p></div>`;
+    return;
+  }
+  el.innerHTML = shown.map(t => {
+    const cmts = t.comments || [];
+    const canEdit = me?.role==='admin';
+    return `
+    <div class="task-card p${t.priority} ${t.status==='done'?'done':''}" data-id="${t.id}">
+      <div class="task-main" onclick="toggleExpand('${t.id}',event)">
+        <div class="chk ${t.status==='done'?'on':''}" onclick="toggleDone('${t.id}','${t.status}',event)"></div>
+        <div class="task-body">
+          <div class="task-title-row">${esc(t.title)}<span class="pbadge">P${t.priority} ${PL[t.priority]}</span></div>
+          ${t.description?`<div class="task-desc">${esc(t.description)}</div>`:''}
+          <div class="task-meta">
+            <span>Par ${esc(t.created_by)}</span>
+            ${visBadge(t)}${dueBadge(t)}
+            ${t.completed_at?`<span style="color:var(--done)">✓ ${esc(t.completed_by||'?')}</span>`:''}
+            <span class="comment-count" onclick="toggleExpand('${t.id}',event)">💬 ${cmts.length}</span>
+          </div>
+        </div>
+        <div class="task-actions" onclick="event.stopPropagation()">
+          ${canEdit?`<button class="ibt" onclick="edit('${t.id}')">✏️</button>`:''}
+          ${canEdit?`<button class="ibt del" onclick="del('${t.id}')">🗑️</button>`:''}
+        </div>
+      </div>
+      <div class="task-comments" id="cmts-${t.id}">
+        ${renderComments(t)}
+        <div class="comment-input-row">
+          <input class="comment-input" id="ci-${t.id}" placeholder="Ajouter un commentaire…" onkeydown="if(event.key==='Enter')postComment('${t.id}')">
+          <button class="comment-send" onclick="postComment('${t.id}')">Envoyer</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderComments(t) {
+  const cmts = t.comments || [];
+  if (!cmts.length) return '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Aucun commentaire encore.</div>';
+  return cmts.sort((a,b)=>a.created_at.localeCompare(b.created_at)).map(c => `
+    <div class="comment">
+      ${makeAvatar(c.author, 26)}
+      <div class="comment-body">
+        <div class="comment-author">${esc(c.author)}<span>${fmt(c.created_at)}</span></div>
+        <div class="comment-text">${esc(c.text)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleExpand(id, event) {
+  if (event.target.closest('.task-actions')||event.target.closest('.chk')) return;
+  const card = document.querySelector(`[data-id="${id}"]`);
+  const was = card.classList.contains('expanded');
+  document.querySelectorAll('.task-card.expanded').forEach(c=>c.classList.remove('expanded'));
+  if (!was) card.classList.add('expanded');
+}
+
+// ── Comments ──────────────────────────────────────────────
+async function postComment(taskId) {
+  const input = document.getElementById(`ci-${taskId}`);
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  await sb.from('comments').insert({task_id:taskId, author:me.name, text});
+  // Real-time will trigger reload
+}
+
+// ── Toggle done ───────────────────────────────────────────
+async function toggleDone(id, cur, event) {
+  event.stopPropagation();
+  const ns = cur==='done'?'pending':'done';
+  await sb.from('tasks').update({
+    status: ns,
+    completed_at: ns==='done' ? new Date().toISOString() : null,
+    completed_by: ns==='done' ? me.name : null,
+  }).eq('id', id);
+}
+
+// ── Filter ────────────────────────────────────────────────
+function setFilter(f, btn) {
+  filter = f;
+  document.querySelectorAll('.f-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  render();
+}
+
+// ── Visibility selector ───────────────────────────────────
+function setVis(v) {
+  selVis = v;
+  document.getElementById('vb-all').className  = 'vis-btn' + (v==='all'?     ' on-all'  : '');
+  document.getElementById('vb-priv').className = 'vis-btn' + (v==='private'? ' on-priv' : '');
+  document.getElementById('f-assign').style.display = v==='private' ? 'block' : 'none';
+}
+
+// ── Priority selector ─────────────────────────────────────
+function selP(p) {
+  selPrio = p;
+  document.querySelectorAll('.po').forEach(el => {
+    el.className = 'po';
+    if (parseInt(el.dataset.v)===p) el.classList.add(`s${p}`);
+  });
+}
+
+// ── Modal ─────────────────────────────────────────────────
+function openModal(t=null) {
+  editId = t ? t.id : null;
+  document.getElementById('modal-ttl').textContent = t ? 'Modifier la tâche' : 'Nouvelle tâche';
+  document.getElementById('f-title').value    = t?.title || '';
+  document.getElementById('f-desc').value     = t?.description || '';
+  document.getElementById('f-due-date').value = t?.due_date || '';
+  document.getElementById('f-due-time').value = t?.due_time?.slice(0,5) || '';
+  // Assign select
+  const sel = document.getElementById('f-assign');
+  sel.innerHTML = '<option value="">Choisir une personne…</option>' +
+    users.map(u => `<option value="${esc(u.name)}">${esc(u.name)}</option>`).join('');
+  const isPrivate = t && t.assigned_to && t.assigned_to !== 'all';
+  setVis(isPrivate ? 'private' : 'all');
+  if (isPrivate && t) sel.value = t.assigned_to;
+  selP(t?.priority || 3);
+  document.getElementById('modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('f-title').focus(), 60);
+}
+function closeModal() { document.getElementById('modal').style.display = 'none'; }
+function bgClose(e)   { if (e.target.id==='modal') closeModal(); }
+
+// ── CRUD ──────────────────────────────────────────────────
+async function saveTask() {
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) { toast('Le titre est obligatoire'); return; }
+  let assigned_to = 'all';
+  if (selVis === 'private') {
+    const person = document.getElementById('f-assign').value;
+    if (!person) { toast('Choisis une personne'); return; }
+    assigned_to = person;
+  }
+  const payload = {
+    title,
+    description:  document.getElementById('f-desc').value.trim(),
+    priority:     selPrio,
+    assigned_to,
+    due_date:     document.getElementById('f-due-date').value || null,
+    due_time:     document.getElementById('f-due-time').value || null,
+    created_by:   me.name,
+  };
+  try {
+    if (editId) {
+      await sb.from('tasks').update(payload).eq('id', editId);
+      toast('Tâche modifiée ✓');
+    } else {
+      await sb.from('tasks').insert(payload);
+      toast('Tâche ajoutée ✓');
+    }
+    closeModal();
+  } catch(e) { toast('Erreur'); }
+}
+function edit(id) { const t=tasks.find(x=>x.id===id); if(t) openModal(t); }
+async function del(id) {
+  const t = tasks.find(x=>x.id===id);
+  if (!confirm(`Supprimer "${t?.title}" ?`)) return;
+  await sb.from('tasks').delete().eq('id', id);
+  toast('Supprimée');
+}
+
+// ── Views ─────────────────────────────────────────────────
+function switchView(v, btn) {
+  currentView = v;
+  ['tasks','calendar','team'].forEach(n => document.getElementById(`view-${n}`).style.display = n===v?'block':'none');
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+  if (v==='calendar') renderCal();
+  if (v==='team') { loadUsers(); renderTeam(); }
+}
+
+// ── Calendar ──────────────────────────────────────────────
+function calPrev()  { calDate.setMonth(calDate.getMonth()-1); renderCal(); }
+function calNext()  { calDate.setMonth(calDate.getMonth()+1); renderCal(); }
+function calToday() { calDate=new Date(); renderCal(); }
+function renderCal() {
+  const y=calDate.getFullYear(), m=calDate.getMonth();
+  document.getElementById('cal-title').textContent = `${MONTHS_FR[m]} ${y}`;
+  let dow=new Date(y,m,1).getDay(); dow=dow===0?6:dow-1;
+  const days=new Date(y,m+1,0).getDate(), today=new Date().toISOString().slice(0,10);
+  const grid=document.getElementById('cal-grid');
+  grid.innerHTML = DAYS_FR.map(d=>`<div class="cal-day-name">${d}</div>`).join('');
+  for(let i=0;i<dow;i++) grid.innerHTML+=`<div class="cal-day other-month"></div>`;
+  for(let day=1;day<=days;day++) {
+    const iso=`${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dt=tasks.filter(t=>t.due_date===iso&&t.status!=='done'&&canSeeTask(t));
+    grid.innerHTML+=`<div class="cal-day ${iso===today?'today-day':''}">
+      <div class="cal-day-num">${day}</div>
+      ${dt.map(t=>`<div class="cal-task-dot p${t.priority}" onclick="focusTask('${t.id}')" title="${esc(t.title)}">${esc(t.title)}</div>`).join('')}
+    </div>`;
+  }
+}
+
+// ── Team ──────────────────────────────────────────────────
+function renderTeam() {
+  const el = document.getElementById('team-grid');
+  el.innerHTML = users.map(u => {
+    const pending = tasks.filter(t=>(t.assigned_to===u.name||t.assigned_to==='all')&&t.status==='pending').length;
+    const done    = tasks.filter(t=>t.completed_by===u.name).length;
+    const canDel  = me?.role==='admin' && u.id!==me?.id;
+    return `<div class="team-card">
+      ${canDel?`<button class="team-del" onclick="delUser('${u.id}')">✕</button>`:''}
+      ${makeAvatar(u.name, 52)}
+      <div class="team-name">${esc(u.name)}</div>
+      <div class="team-role">${u.role==='admin'?'👑 Patron':'👤 Équipier'}</div>
+      <div class="team-tasks"><strong>${pending}</strong> en attente · <strong>${done}</strong> terminée${done>1?'s':''}</div>
+    </div>`;
+  }).join('');
+}
+async function addTeamMember() {
+  const name = document.getElementById('team-new-name').value.trim();
+  if (!name) return;
+  const { error } = await sb.from('users').insert({name, role:teamNewRole});
+  if (error) { toast(error.code==='23505'?'Ce prénom existe déjà':'Erreur'); return; }
+  document.getElementById('team-new-name').value = '';
+  await loadUsers(); renderTeam(); toast(`${name} ajouté(e) ✓`);
+}
+async function delUser(uid) {
+  const u=users.find(x=>x.id===uid);
+  if (!confirm(`Retirer ${u?.name} ?`)) return;
+  await sb.from('users').delete().eq('id', uid);
+  await loadUsers(); renderTeam(); toast('Membre retiré');
+}
+
+// ── Daily reminders ───────────────────────────────────────
+function checkDailyReminders() {
+  if (!me) return;
+  const today=new Date().toISOString().slice(0,10);
+  const t=tasks.filter(x=>x.due_date===today&&x.status==='pending'&&canSeeTask(x));
+  if (t.length) {
+    if ('Notification' in window && Notification.permission==='granted')
+      new Notification(`Holy Beauty Team Task — ${t.length} tâche${t.length>1?'s':''} aujourd'hui`, {body:t.map(x=>x.title).join(', ')});
+    playNotif(t.some(x=>x.priority===1)?1:3);
+    toast(`⏰ ${t.length} tâche${t.length>1?'s':''} pour aujourd'hui !`);
+  }
+  setInterval(checkDailyReminders, 3600000);
+}
+
+// ── Helpers ───────────────────────────────────────────────
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmt(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+}
+function toast(msg) {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('on');
+  setTimeout(()=>el.classList.remove('on'),2800);
+}
+
+// ── Keys ──────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') { closeModal(); document.getElementById('notif-panel').classList.remove('on'); }
+  if ((e.metaKey||e.ctrlKey)&&e.key==='Enter') saveTask();
+});
+document.addEventListener('click', e => {
+  const p=document.getElementById('notif-panel');
+  if (!p.contains(e.target)&&!document.getElementById('notif-btn').contains(e.target)) p.classList.remove('on');
+});
+
+// ── Session restore + init ────────────────────────────────
+if ('Notification' in window && Notification.permission==='default') Notification.requestPermission();
+
+if (initSupabase()) {
+  const saved = localStorage.getItem('hbtt_user');
+  if (saved) {
+    me = JSON.parse(saved);
+    startSession();
+  } else {
+    loadUsersForLogin();
+  }
+}
+</script>
+</body>
+</html>
