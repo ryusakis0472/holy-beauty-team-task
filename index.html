@@ -608,7 +608,7 @@ async function joinNew() {
 function startSession() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  document.getElementById('btn-new').style.display = me.role==='admin' ? '' : 'none';
+  document.getElementById('btn-new').style.display = '';
   const av = document.getElementById('me-avatar');
   av.className = avatarClass(me.name);
   av.textContent = initials(me.name);
